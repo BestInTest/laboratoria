@@ -3,7 +3,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-public class Person implements Comparable<Person> {
+public class Person implements Comparable<Person>, Serializable {
 
     public String name;
     public String surName;
@@ -93,17 +93,65 @@ public class Person implements Comparable<Person> {
             String line;
             while ((line = br.readLine()) != null) {
                 if (!line.startsWith("imię i nazwisko")) { // Pominięcie nagłówka
-                    persons.add(fromCsvLine(line));
+                    Person p = fromCsvLine(line);
+                    if (alreadyExists(persons, p)) {
+                        throw new AmbiguousPersonException(p);
+                    }
+                    persons.add(p);
+
+                    /* Dziwne to zadanie
+                    String dane[] = line.split(",");
+                    if (dane[dane.length - 2] != null) {
+                        if (!dane[3].isEmpty()) {
+                            System.err.println(1);
+                        }
+                    }*/
                 }
                 //line = br.readLine();
             }
-        } catch (Exception e) {
+        } catch (FileNotFoundException e) {
+            System.err.println("File not found: " + e.getMessage());
+        } catch (NegativeLifespanException | AmbiguousPersonException | IOException e) {
             System.err.println(e.getMessage());
         }
+        //Zmodyfikuj metodę fromCsv(), by w obiektach rodziców ustawiała referencje do obiektów dzieci.
 
         return persons;
     }
 
+    private static boolean alreadyExists(List<Person> persons, Person newPerson) {
+        for (Person person : persons) {
+            if (person.name.equals(newPerson.name) && person.surName.equals(newPerson.surName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static void toBinaryFile(File file, List<Person> persons) {
+        if (!file.exists()) {
+            System.err.println("File not found: " + file.getAbsolutePath());
+            return;
+        }
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(file))) {
+            out.writeObject(persons);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static List<Person> fromBinaryFile(File file) {
+        if (!file.exists()) {
+            System.err.println("File not found: " + file.getAbsolutePath());
+            return null;
+        }
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(file))) {
+            return (List<Person>) in.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
     /*
     public static List<Person> fromCsv(String path) {
         File f = new File(path);
