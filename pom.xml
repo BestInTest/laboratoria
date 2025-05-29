@@ -18,6 +18,7 @@
         <module>lab9</module>
         <module>lab10</module>
         <module>lab10_shop</module>
+        <module>lab11</module>
     </modules>
 
     <properties>
